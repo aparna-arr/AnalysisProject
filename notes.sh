@@ -7,6 +7,7 @@ echo "${FILE%.*}"
 # skipping the cell cycle files
 # and the storm overlap file
 
+
 [arrajpur@sh-ln03 login ~/Analysis_Project]$ clean_data.py downloaded_data/HCT116_chr21-28-30Mb_6h\ auxin.csv clean_data/HCT116_chr21-28-30Mb_6h_auxin.tsv
 [arrajpur@sh-ln03 login ~/Analysis_Project]$ clean_data.py downloaded_data/HCT116_chr21-28-30Mb_untreated.csv clean_data/HCT116_chr21-28-30Mb_untreated.tsv
 [arrajpur@sh-ln03 login ~/Analysis_Project]$ clean_data.py downloaded_data/HCT116_chr21-34-37Mb_6h\ auxin.csv clean_data/HCT116_chr21-34-37Mb_6h_auxin.tsv
