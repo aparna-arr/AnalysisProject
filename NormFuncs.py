@@ -9,9 +9,33 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from matplotlib.colors import Normalize
+
+class MidpointNormalize(Normalize):
+	def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+		self.midpoint = midpoint
+		Normalize.__init__(self, vmin, vmax, clip)
+
+	def __call__(self, value, clip=None):
+		# I'm ignoring masked values and all kinds of edge cases to make a
+		# simple example...
+		x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+		return np.ma.masked_array(np.interp(value, x, y))
+
+
 def get_corrected_cor_mat(distmap, distmaps, tag):
 	gen_pos, gen_vals = get_gen_pos_gen_vals(distmaps)
 	im_cor = get_cor_matrix(distmap, tag, gen_pos, gen_vals)
+	return im_cor
+
+def get_single_cell_norm_mat(distmap_idx, distmaps, tag, plotFig = False):
+	gen_pos, gen_vals = get_gen_pos_gen_vals(distmaps)
+	norm_sc = get_sc_norm(distmaps[distmap_idx,:,:], tag, gen_pos, gen_vals, plt_val=plotFig)
+	return norm_sc
+
+def get_single_cell_cor_mat(distmap_idx, distmaps, tag, plotFig = False):
+	gen_pos, gen_vals = get_gen_pos_gen_vals(distmaps)
+	im_cor = get_cor_matrix(distmaps[distmap_idx], tag, gen_pos, gen_vals, plt_val=plotFig)
 	return im_cor
 
 ## From Bogdan's code ##
@@ -86,7 +110,8 @@ def perform_norm(mat, gen_pos, gen_vals):
 
 	return norm_mat
 
-def get_cor_matrix(mat, tag, gen_pos=None,gen_vals=None,plt_val=True):
+	norm_sc = get_sc_norm(distmaps[distmap_idx,:,:], tag, gen_pos, gen_vals)
+def get_sc_norm(mat, tag, gen_pos=None,gen_vals=None,plt_val=False):
 	mat_ = np.array(mat)
 
 	if plt_val:
@@ -104,9 +129,38 @@ def get_cor_matrix(mat, tag, gen_pos=None,gen_vals=None,plt_val=True):
 
 	mat_[np.isinf(mat_)]=np.nan
 	if plt_val:
+		norm = MidpointNormalize(midpoint=0)
 		f=plt.figure()
 		plt.title('distance normalized matrix')
+		plt.imshow(-mat_,interpolation='nearest',cmap='seismic', norm=norm)
+		plt.colorbar()
+		plt.show()
+		f.savefig(tag + "_distance_norm_mat.pdf", bbox_inches='tight')
+
+	return mat_
+
+def get_cor_matrix(mat, tag, gen_pos=None,gen_vals=None,plt_val=False):
+	mat_ = np.array(mat)
+
+	if plt_val:
+		plt.figure()
+		plt.title('original distance matrix')
 		plt.imshow(-mat_,interpolation='nearest',cmap='seismic')
+		plt.colorbar()
+		plt.show()
+	mat_[range(len(mat_)),range(len(mat_))]=np.nan
+
+	##normalize for polymer effect
+	if gen_pos is not None:
+		mat_ = perform_norm(mat_,gen_pos,gen_vals)
+		#mat_ False.log(mat_)
+
+	mat_[np.isinf(mat_)]=np.nan
+	if plt_val:
+		norm = MidpointNormalize(midpoint=0)
+		f=plt.figure()
+		plt.title('distance normalized matrix')
+		plt.imshow(-mat_,interpolation='nearest',cmap='seismic', norm=norm)
 		plt.colorbar()
 		plt.show()
 		f.savefig(tag + "_distance_norm_mat.pdf", bbox_inches='tight')
@@ -116,8 +170,9 @@ def get_cor_matrix(mat, tag, gen_pos=None,gen_vals=None,plt_val=True):
 
 	if plt_val:
 		f=plt.figure()
+		norm = MidpointNormalize(midpoint=0)
 		plt.title('correlation matrix')
-		plt.imshow(mat_,interpolation='nearest',cmap='seismic')
+		plt.imshow(mat_,interpolation='nearest',cmap='seismic', norm=norm)
 		plt.colorbar()
 		plt.show()
 		f.savefig(tag + "_cormat_debug.pdf", bbox_inches='tight')
